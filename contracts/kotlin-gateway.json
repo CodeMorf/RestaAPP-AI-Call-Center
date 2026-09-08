@@ -1,0 +1,214 @@
+{
+  "version": "1.0.0",
+  "product": {
+    "name": "RestaAPP Phone Gateway",
+    "code": "restapp-phone-gateway",
+    "platform": "android",
+    "language": "kotlin",
+    "package_name": "tech.allsender.restapp.phonegateway",
+    "purpose": "Vincular un Android con SIM a un restaurante/sucursal de RestaAPP para telefonia y SMS, manteniendo ElevenLabs como unico proveedor de agente de voz."
+  },
+  "architecture": {
+    "conversation_owner": "elevenlabs",
+    "business_execution_owner": "restapp",
+    "cellular_transport_owner": "android_sim",
+    "rules": [
+      "La app Android no decide productos, precios, delivery, reservas ni reglas comerciales.",
+      "La app Android no contiene prompts de negocio del restaurante.",
+      "La app Android no almacena la API key de ElevenLabs de forma permanente.",
+      "La identidad de restaurante y sucursal se resuelve desde la credencial emitida por RestaAPP.",
+      "Las funciones GSM de audio se habilitan solo en dispositivos/versiones certificados."
+    ]
+  },
+  "pairing": {
+    "method": "qr",
+    "qr_format": "json",
+    "qr_fields": [
+      "version",
+      "pairing_token",
+      "restaurant_public_id",
+      "branch_public_id",
+      "expires_at"
+    ],
+    "one_time_token": true,
+    "short_ttl": true,
+    "store_secrets_in_qr": false,
+    "exchange_result": {
+      "device_token": "revocable_scoped_token",
+      "device_id": "server_generated",
+      "restaurant": "server_resolved",
+      "branch": "server_resolved",
+      "agent_id": "server_resolved",
+      "capabilities": "server_resolved",
+      "permissions": "server_resolved"
+    }
+  },
+  "android_roles": {
+    "dialer": {
+      "required_when_supported": true,
+      "purpose": "Gestion de llamadas entrantes y salientes mediante las APIs permitidas por Android."
+    },
+    "sms": {
+      "required_when_supported": true,
+      "purpose": "Envio y recepcion de SMS mediante la SIM del dispositivo."
+    }
+  },
+  "runtime_permissions": {
+    "request_only_when_needed": true,
+    "categories": [
+      "phone",
+      "call_state",
+      "sms",
+      "contacts_optional",
+      "notifications",
+      "camera_for_qr",
+      "microphone_when_supported_by_call_bridge"
+    ],
+    "policy": "Usar solo permisos compatibles con la version objetivo de Android y con la funcion activa. No solicitar permisos no utilizados."
+  },
+  "capabilities": {
+    "qr_pairing": true,
+    "incoming_calls": true,
+    "outgoing_calls": true,
+    "incoming_sms": true,
+    "outgoing_sms": true,
+    "call_state_events": true,
+    "device_heartbeat": true,
+    "battery_state": true,
+    "network_state": true,
+    "sim_operator": true,
+    "phone_number_when_available": true,
+    "remote_unpair": true,
+    "elevenlabs_agent_resolution": true,
+    "gsm_audio_bridge": "compatibility_required"
+  },
+  "screens": [
+    {
+      "id": "welcome",
+      "title": "RestaAPP Phone Gateway",
+      "actions": ["scan_qr"]
+    },
+    {
+      "id": "pairing",
+      "title": "Vincular dispositivo",
+      "actions": ["scan_qr", "retry_pairing"]
+    },
+    {
+      "id": "permissions",
+      "title": "Permisos del teléfono",
+      "actions": ["grant_required_roles", "grant_runtime_permissions"]
+    },
+    {
+      "id": "home",
+      "title": "Central Telefónica IA",
+      "shows": [
+        "restaurant_name",
+        "branch_name",
+        "connection_status",
+        "phone_number",
+        "sim_operator",
+        "battery",
+        "last_sync",
+        "calls_status",
+        "sms_status"
+      ]
+    },
+    {
+      "id": "activity",
+      "title": "Actividad",
+      "shows": ["recent_calls", "recent_sms"]
+    },
+    {
+      "id": "settings",
+      "title": "Dispositivo",
+      "actions": ["refresh_configuration", "unpair_device"]
+    }
+  ],
+  "api_contract": {
+    "base_path": "/api/ai-call-center/v1/gateway",
+    "operations": [
+      {
+        "name": "pair",
+        "method": "POST",
+        "path": "/pair",
+        "auth": "pairing_token"
+      },
+      {
+        "name": "configuration",
+        "method": "GET",
+        "path": "/configuration",
+        "auth": "device_token"
+      },
+      {
+        "name": "heartbeat",
+        "method": "POST",
+        "path": "/heartbeat",
+        "auth": "device_token"
+      },
+      {
+        "name": "call_event",
+        "method": "POST",
+        "path": "/calls/events",
+        "auth": "device_token"
+      },
+      {
+        "name": "sms_inbound",
+        "method": "POST",
+        "path": "/sms/inbound",
+        "auth": "device_token"
+      },
+      {
+        "name": "sms_outbox",
+        "method": "GET",
+        "path": "/sms/outbox",
+        "auth": "device_token"
+      },
+      {
+        "name": "sms_result",
+        "method": "POST",
+        "path": "/sms/result",
+        "auth": "device_token"
+      }
+    ]
+  },
+  "device_state": {
+    "states": ["unpaired", "paired", "online", "offline", "restricted", "revoked"],
+    "heartbeat_seconds": 60,
+    "offline_after_seconds": 180
+  },
+  "security": {
+    "tls_required": true,
+    "device_token_storage": "android_keystore_encrypted_storage",
+    "token_rotation": true,
+    "remote_revocation": true,
+    "tenant_id_from_request_forbidden": true,
+    "elevenlabs_api_key_on_device": false,
+    "log_sensitive_values": false
+  },
+  "elevenlabs": {
+    "provider": "elevenlabs",
+    "only_provider": true,
+    "agent_id_from_restapp": true,
+    "voice_and_personality_managed_in_elevenlabs": true,
+    "conversation_owned_by_elevenlabs": true,
+    "business_tools_hosted_by_restapp": true
+  },
+  "acceptance_tests": [
+    "El QR vincula exactamente al restaurante y sucursal autorizados.",
+    "Un QR vencido o usado no puede vincular otro dispositivo.",
+    "La app puede ser desvinculada remotamente.",
+    "Los SMS enviados se registran con estado y referencia del restaurante.",
+    "Los SMS entrantes quedan asociados al dispositivo/restaurante correcto.",
+    "Las llamadas generan eventos de inicio, respuesta y finalizacion cuando Android los expone.",
+    "Ninguna credencial permanente de ElevenLabs queda dentro del QR o almacenamiento normal de la app.",
+    "Si el puente de audio GSM no esta certificado en un dispositivo, la interfaz no anuncia agente de voz GSM como disponible."
+  ],
+  "ui_copy": {
+    "no_activity": "No hay actividad todavía.",
+    "pair_device": "Vincula este teléfono con tu restaurante.",
+    "connected": "Dispositivo conectado.",
+    "offline": "El teléfono no está disponible en este momento.",
+    "permissions_needed": "Completa los permisos para habilitar las funciones del teléfono."
+  },
+  "author": "CodeMorf"
+}
