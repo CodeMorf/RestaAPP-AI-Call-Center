@@ -1,0 +1,35 @@
+<?php
+
+return [
+    'name' => 'AiCallCenter',
+    'provider' => 'elevenlabs',
+    'commercial_name' => 'RestaAPP AI Call Center',
+    'default_monthly_price_dop' => 1990,
+    'pairing_ttl_minutes' => 10,
+    'cart_token_ttl_minutes' => 10,
+    'gateway_heartbeat_seconds' => 60,
+    'gateway_offline_after_seconds' => 180,
+    'tools_version' => 'v1',
+    'api_prefix' => 'ai-call-center/v1',
+    'gateway_prefix' => 'ai-call-center/v1/gateway',
+    'elevenlabs' => [
+        'base_url' => 'https://api.elevenlabs.io',
+        'timeout_seconds' => 15,
+    ],
+    'default_permissions' => [
+        'restaurant.context.read' => true,
+        'menu.read' => true,
+        'products.read' => true,
+        'customers.read' => true,
+        'customers.write' => true,
+        'orders.read' => true,
+        'orders.create' => true,
+        'reservations.read' => true,
+        'reservations.create' => true,
+        'delivery.validate' => true,
+        'sms.send' => true,
+        'orders.update' => false,
+        'orders.cancel' => false,
+        'calls.transfer' => false,
+    ],
+];
