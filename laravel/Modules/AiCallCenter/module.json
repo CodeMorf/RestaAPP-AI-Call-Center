@@ -1,0 +1,11 @@
+{
+  "name": "AiCallCenter",
+  "alias": "aicallcenter",
+  "description": "RestaAPP AI Call Center powered exclusively by ElevenLabs",
+  "keywords": ["restapp", "elevenlabs", "call-center", "android-gateway", "sms"],
+  "priority": 0,
+  "providers": [
+    "Modules\\AiCallCenter\\Providers\\AiCallCenterServiceProvider"
+  ],
+  "files": []
+}
