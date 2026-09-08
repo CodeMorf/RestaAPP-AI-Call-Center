@@ -1,0 +1,209 @@
+{
+  "version": "1.0.0",
+  "provider": "elevenlabs",
+  "conversation_owner": "elevenlabs",
+  "business_owner": "restapp",
+  "principles": [
+    "ElevenLabs decide como conversar y cuando preguntar datos faltantes.",
+    "RestaAPP nunca inventa una conversacion ni devuelve frases obligatorias salvo mensajes operativos necesarios.",
+    "Las herramientas devuelven datos estructurados, validaciones, opciones reales y missing_fields.",
+    "Toda accion de escritura requiere permiso explicito del restaurante.",
+    "Productos, precios, impuestos, cargos, disponibilidad y delivery siempre se resuelven desde RestaAPP."
+  ],
+  "tools": [
+    {
+      "name": "get_restaurant_context",
+      "permission": "restaurant.context.read",
+      "kind": "read",
+      "description": "Obtiene la informacion operativa actual del restaurante y sucursal: nombre, moneda, idioma, horarios, modalidades disponibles, direccion, politicas y capacidades habilitadas. Usar al inicio o cuando el cliente pregunte informacion general.",
+      "input": {},
+      "output": ["restaurant", "branch", "currency", "timezone", "opening_status", "order_types", "capabilities"]
+    },
+    {
+      "name": "search_menu",
+      "permission": "menu.read",
+      "kind": "read",
+      "description": "Busca productos reales del menu por lo que el cliente dijo. Usar antes de afirmar que un producto existe o indicar precio. Puede devolver varios candidatos para que ElevenLabs aclare naturalmente con el cliente.",
+      "input": {
+        "query": "string|required",
+        "limit": "integer|optional|max:10"
+      },
+      "output": ["matches", "needs_clarification"]
+    },
+    {
+      "name": "get_product",
+      "permission": "products.read",
+      "kind": "read",
+      "description": "Obtiene un producto real por ID con precio actual, variantes, tamanos, modificadores, extras, restricciones y disponibilidad. Usar antes de agregar una seleccion al carrito cuando existan opciones obligatorias o dudas.",
+      "input": {
+        "product_id": "integer|required"
+      },
+      "output": ["product", "variations", "modifier_groups", "availability", "required_choices"]
+    },
+    {
+      "name": "validate_fulfillment",
+      "permission": "delivery.validate",
+      "kind": "read",
+      "description": "Valida la modalidad elegida por el cliente. Normaliza pickup, recogida, takeaway y para llevar a la modalidad real configurada por RestaAPP. Para delivery valida direccion/ubicacion, cobertura, sucursal, distancia, costo y datos faltantes. Para pickup devuelve sucursal, direccion y condiciones reales. ElevenLabs debe preguntar de forma natural solamente los missing_fields devueltos.",
+      "input": {
+        "fulfillment": "string|required|examples:delivery,pickup,recogida,takeaway,para_llevar",
+        "branch_id": "integer|optional",
+        "customer_address_id": "integer|optional",
+        "address_text": "string|optional",
+        "latitude": "number|optional",
+        "longitude": "number|optional",
+        "cart_subtotal": "number|optional"
+      },
+      "output": ["normalized_type", "valid", "branch", "coverage", "delivery_fee", "distance", "pickup_details", "missing_fields", "reason_code"]
+    },
+    {
+      "name": "validate_cart",
+      "permission": "orders.create",
+      "kind": "read",
+      "description": "Valida el pedido completo contra los productos y reglas actuales de RestaAPP. Calcula precios, variantes, modificadores, impuestos, cargos, delivery y total. Devuelve el resumen exacto que ElevenLabs debe confirmar verbalmente con el cliente y un cart_token temporal. Nunca calcular totales dentro del agente.",
+      "input": {
+        "items": "array|required",
+        "fulfillment": "object|required",
+        "customer_id": "integer|optional",
+        "notes": "string|optional"
+      },
+      "output": ["valid", "items", "subtotal", "taxes", "charges", "delivery_fee", "total", "currency", "summary", "missing_fields", "cart_token", "expires_at"]
+    },
+    {
+      "name": "create_order",
+      "permission": "orders.create",
+      "kind": "write",
+      "description": "Crea una orden real solamente despues de que el cliente haya confirmado explicitamente el resumen devuelto por validate_cart. Revalida el cart_token y evita duplicados. No usar sin confirmacion verbal clara.",
+      "input": {
+        "cart_token": "string|required",
+        "customer_confirmed": "boolean|required|must_be_true",
+        "conversation_id": "string|optional",
+        "call_id": "string|optional",
+        "customer_id": "integer|optional",
+        "customer": "object|optional"
+      },
+      "output": ["created", "order_id", "order_uuid", "order_number", "status", "total", "currency", "fulfillment", "estimated_time"]
+    },
+    {
+      "name": "get_order_status",
+      "permission": "orders.read",
+      "kind": "read",
+      "description": "Consulta el estado actual de una orden real usando numero, UUID o telefono del cliente cuando corresponda.",
+      "input": {
+        "order_reference": "string|optional",
+        "phone": "string|optional"
+      },
+      "output": ["found", "order", "status", "estimated_time"]
+    },
+    {
+      "name": "find_customer",
+      "permission": "customers.read",
+      "kind": "read",
+      "description": "Busca un cliente del restaurante principalmente por telefono para reutilizar nombre y direcciones existentes durante una llamada.",
+      "input": {
+        "phone": "string|required"
+      },
+      "output": ["found", "customer", "addresses"]
+    },
+    {
+      "name": "upsert_customer",
+      "permission": "customers.write",
+      "kind": "write",
+      "description": "Crea o actualiza datos basicos del cliente y, cuando se autorice, una direccion con coordenadas. Usar solamente para datos que el cliente haya proporcionado durante la conversacion.",
+      "input": {
+        "phone": "string|required",
+        "name": "string|optional",
+        "email": "string|optional",
+        "address": "object|optional"
+      },
+      "output": ["customer_id", "address_id", "saved"]
+    },
+    {
+      "name": "check_reservation",
+      "permission": "reservations.read",
+      "kind": "read",
+      "description": "Consulta si una reserva puede realizarse para fecha, hora, cantidad de personas y sucursal. Devuelve disponibilidad real y datos faltantes para que ElevenLabs continue la conversacion naturalmente.",
+      "input": {
+        "date": "string|required",
+        "time": "string|required",
+        "party_size": "integer|required",
+        "branch_id": "integer|optional"
+      },
+      "output": ["available", "branch", "alternatives", "missing_fields"]
+    },
+    {
+      "name": "create_reservation",
+      "permission": "reservations.create",
+      "kind": "write",
+      "description": "Crea una reserva real despues de confirmar fecha, hora, numero de personas y datos de contacto con el cliente.",
+      "input": {
+        "date": "string|required",
+        "time": "string|required",
+        "party_size": "integer|required",
+        "customer": "object|required",
+        "branch_id": "integer|optional",
+        "notes": "string|optional",
+        "customer_confirmed": "boolean|required|must_be_true"
+      },
+      "output": ["created", "reservation_id", "reference", "date", "time", "party_size", "branch"]
+    },
+    {
+      "name": "send_customer_sms",
+      "permission": "sms.send",
+      "kind": "write",
+      "description": "Solicita al RestaAPP Phone Gateway enviar un SMS desde la SIM vinculada del restaurante. Usar para confirmaciones o informacion autorizada. La herramienta crea el envio y el Android reporta el resultado.",
+      "input": {
+        "phone": "string|required",
+        "message": "string|required|max:1000",
+        "purpose": "string|optional"
+      },
+      "output": ["queued", "message_id", "device_status"]
+    },
+    {
+      "name": "update_order",
+      "permission": "orders.update",
+      "kind": "write_optional",
+      "description": "Modifica una orden solamente cuando el restaurante habilito este permiso y el estado actual permite cambios. Siempre valida nuevamente los productos y total.",
+      "input": {
+        "order_reference": "string|required",
+        "changes": "object|required",
+        "customer_confirmed": "boolean|required|must_be_true"
+      },
+      "output": ["updated", "order", "new_total"]
+    },
+    {
+      "name": "cancel_order",
+      "permission": "orders.cancel",
+      "kind": "write_optional",
+      "description": "Cancela una orden solamente cuando el restaurante habilito este permiso y la orden admite cancelacion. Requiere confirmacion explicita del cliente.",
+      "input": {
+        "order_reference": "string|required",
+        "reason": "string|required",
+        "customer_confirmed": "boolean|required|must_be_true"
+      },
+      "output": ["cancelled", "order_reference", "status"]
+    },
+    {
+      "name": "transfer_to_human",
+      "permission": "calls.transfer",
+      "kind": "system_optional",
+      "description": "Solicita transferencia a una persona cuando el restaurante la tenga configurada o cuando el agente no pueda resolver el caso con seguridad.",
+      "input": {
+        "reason": "string|required"
+      },
+      "output": ["available", "transfer_target", "status"]
+    }
+  ],
+  "order_rules": {
+    "fulfillment_aliases": {
+      "pickup": ["pickup", "pick up", "recogida", "recoger", "takeaway", "take away", "takeout", "take-out", "para llevar", "levantar"],
+      "delivery": ["delivery", "entrega", "a domicilio", "domicilio"]
+    },
+    "confirmation_required_before_create": true,
+    "server_revalidation_required": true,
+    "idempotency_required": true,
+    "never_trust_agent_prices": true,
+    "never_trust_agent_product_names_as_ids": true
+  },
+  "author": "CodeMorf"
+}
