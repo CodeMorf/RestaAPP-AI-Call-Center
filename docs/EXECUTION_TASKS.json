@@ -1,0 +1,34 @@
+{
+  "project": "RestaAPP AI Call Center",
+  "version": "1.0",
+  "date": "2026-09-08",
+  "production_migration_allowed": false,
+  "gates": [
+    "Code-flow audit",
+    "API contract + authentication",
+    "Tenant isolation + idempotency",
+    "Fiscal regression",
+    "Android capability certification"
+  ],
+  "tasks": [
+    {"id":"A01","task":"Map pickup and delivery order creation","priority":"P0"},
+    {"id":"A02","task":"Map delivery location/branch/fee calculation","priority":"P0"},
+    {"id":"A03","task":"Map customer/address persistence","priority":"P0"},
+    {"id":"A04","task":"Map payment-to-fiscal hooks","priority":"P0"},
+    {"id":"S01","task":"Encrypt ElevenLabs key at rest","priority":"P0"},
+    {"id":"S02","task":"Authenticate/sign tool requests","priority":"P0"},
+    {"id":"S03","task":"Server-side tenant context","priority":"P0"},
+    {"id":"S04","task":"Idempotency and replay protection","priority":"P0"},
+    {"id":"API01","task":"Context/menu/product read tools","priority":"P0"},
+    {"id":"API02","task":"Fulfillment/delivery validation","priority":"P0"},
+    {"id":"API03","task":"Cart and real total calculation","priority":"P0"},
+    {"id":"API04","task":"create_order via existing service path","priority":"P0"},
+    {"id":"F01","task":"Block AI access to NCF/e-NCF allocation","priority":"P0"},
+    {"id":"F02","task":"Fiscal regression B01/B02/e-CF readiness","priority":"P0"},
+    {"id":"AND01","task":"QR/device credential","priority":"P0"},
+    {"id":"AND02","task":"SMS/call lifecycle","priority":"P0"},
+    {"id":"AND03","task":"GSM audio bridge device tests","priority":"P0"},
+    {"id":"QA01","task":"Security/tenant/duplicate tests","priority":"P0"},
+    {"id":"PILOT","task":"Pilot 1-3 restaurants","priority":"P0"}
+  ]
+}
